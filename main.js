@@ -12,7 +12,8 @@
     "use strict";
 
     // Change this to switch dual subtitle language
-    const LANG = "en";
+    const DEFAULT_LANG = "en";
+    const FALLBACK_LANG = "en-asr"
 
     // Returns url for YouTube Subtitle API: youtube.com/api/timedtext...
     // including PO Token, without which fetching subtitle returns empty string. Should look something like
@@ -45,6 +46,7 @@
                 timedTextUrl = new URL(entry.name);
                 timedTextUrl.searchParams.set("fmt", "vtt"); // track elems require vtt format
                 timedTextUrl.searchParams.delete("tlang"); // tlang links are for auto-translated subs
+                timedTextUrl.searchParams.delete("kind");
                 break;
             }
         }
@@ -57,27 +59,56 @@
     }
 
     // Returns subtitle data in URI form + vtt format, to use in track element
-    async function fetchSubtitleData(baseUrl, languageCode) {
+    // Expected language code: en, zh-CN, ...
+    async function fetchSubtitleData(baseUrl, language, isAsr=false) {
         let subtitleUrl = new URL(baseUrl);
-        subtitleUrl.set("lang", languageCode)
+        subtitleUrl.searchParams.set("lang", language);
+        if (isAsr) {
+            subtitleUrl.searchParams.set("kind", "asr");
+        }
         const response = await fetch(subtitleUrl);
 
         if (!response.ok) {
-            throw new Error("Couldn't fetch subtitle data with language " + languageCode);
+            throw new Error("Couldn't fetch subtitle data with language " + language);
         }
 
+        console.log("Successfully fetched subtitle for language " + language);
         const responseText = await response.text();
         return "data:text/vtt," + encodeURIComponent(responseText);
     }
 
-    // Add track element to video given subtitle data
-    function addSubtitle(subData){
-        console.log("Adding subtitle to video");
-        const video = document.querySelector("video");
-        const track = document.createElement("track");
-        track.src = subData;
-        track.track.mode = "showing";
-        video.appendChild(track);
+    // Fills the selector with available languages
+    function populateLanguageSelector(selector){
+        const captionTracks = document.querySelector("#movie_player")
+            .getPlayerResponse()
+            .captions
+            .playerCaptionsTracklistRenderer
+            .captionTracks;
+
+        for (const track of captionTracks) {
+            const isAsr = track.kind === "asr";
+            const language = track.languageCode;
+
+            const opt = document.createElement("option");
+            opt.value = isAsr ? language + "-asr" : language;
+            opt.textContent = isAsr
+                ? language.toUpperCase() + " - Automatic Subtitle"
+                : language.toUpperCase();
+
+            selector.appendChild(opt);
+        }
+    }
+
+    // Load the subtitle with the given language to the track element
+    // languageCode may contains "-asr" to indicate auto-subtitles, e.g "en-asr"
+    async function loadSubtitle(track, baseTimedTextUrl, languageCode){
+        // handles codes containing asr, e.g "en-asr"
+        let isAsr = languageCode.endsWith("-asr");
+        let language = isAsr ? languageCode.slice(0,-4) : languageCode;
+
+        let subtitleData = await fetchSubtitleData(baseTimedTextUrl, language, isAsr);
+        console.log("Changing secondary subtitle to language " + language);
+        track.src = subtitleData;
     }
 
     function pause (milliseconds) {
@@ -86,13 +117,61 @@
 
     async function main(){
         try {
+            const video = document.querySelector("video");
+            const track = document.createElement("track");
+            track.className = "dual-subtitle-track"
+            video.appendChild(track);
+
+            const subtitleButton = document.querySelector(".ytp-subtitles-button");
+            const languageSelect = document.createElement("select");
+            languageSelect.className = "dual-subtitle-language-selector"
+            populateLanguageSelector(languageSelect);
+            subtitleButton.before(languageSelect);
+
+
             let baseTimedTextUrl = await extractTimedTextUrl();
-            let dualSubData = await fetchSubtitleData(baseTimedTextUrl, LANG);
-            addSubtitle(dualSubData);
+
+            // Load subtitle with default language
+            const availableLanguages = [...languageSelect.options].map(o => o.value);
+            let initialSubLang;
+            if (availableLanguages.includes(DEFAULT_LANG)){
+                initialSubLang = DEFAULT_LANG;
+            } else if (availableLanguages.includes(FALLBACK_LANG)){
+                initialSubLang = FALLBACK_LANG;
+            } else {
+                initialSubLang = languageSelect.value;
+            }
+            languageSelect.value = initialSubLang;
+            await loadSubtitle(track, baseTimedTextUrl, initialSubLang);
+            console.log("Loaded initial sub with language " + initialSubLang);
+
+            // Change language with select element
+            languageSelect.addEventListener("change", () => {
+                const languageCode = languageSelect.value;
+                loadSubtitle(track, baseTimedTextUrl, languageCode);
+            })
+
+            // Toggle showing secondary subtitle with YouTube subtitle button
+            // Watch for changes to ariaPressed, since pressing C or clicking can toggle the button
+            const observer = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (m.attributeName === "aria-pressed") {
+                        if (subtitleButton.ariaPressed === "true"){
+                            track.track.mode = "showing";
+                        } else {
+                            track.track.mode = "hidden";
+                        }
+                    }
+                }
+            });
+
+            observer.observe(subtitleButton, {
+                attributes: true,
+                attributeFilter: ["aria-pressed"]
+            });
         } catch(e) {
             console.error(e);
         }
-
     }
 
     document.addEventListener("yt-navigate-finish", () => {
