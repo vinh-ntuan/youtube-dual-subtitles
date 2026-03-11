@@ -57,11 +57,13 @@
     }
 
     // Returns subtitle data in URI form + vtt format, to use in track element
-    async function fetchSubtitleData(url) {
-        const response = await fetch(url);
+    async function fetchSubtitleData(baseUrl, languageCode) {
+        let subtitleUrl = new URL(baseUrl);
+        subtitleUrl.set("lang", languageCode)
+        const response = await fetch(subtitleUrl);
 
         if (!response.ok) {
-            throw new Error("Couldn't fetch subtitle data");
+            throw new Error("Couldn't fetch subtitle data with language " + languageCode);
         }
 
         const responseText = await response.text();
@@ -85,10 +87,7 @@
     async function main(){
         try {
             let baseTimedTextUrl = await extractTimedTextUrl();
-            let dualSubUrl = new URL(baseTimedTextUrl);
-            dualSubUrl.searchParams.set("lang", LANG);
-
-            let dualSubData = await fetchSubtitleData(dualSubUrl);
+            let dualSubData = await fetchSubtitleData(baseTimedTextUrl, LANG);
             addSubtitle(dualSubData);
         } catch(e) {
             console.error(e);
