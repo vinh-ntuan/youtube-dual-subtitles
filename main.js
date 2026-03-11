@@ -123,6 +123,9 @@
             video.appendChild(track);
 
             const subtitleButton = document.querySelector(".ytp-subtitles-button");
+
+            // Removes old language selector if Youtube retains it while switching videos
+            document.querySelector(".dual-subtitle-language-selector")?.remove();
             const languageSelect = document.createElement("select");
             languageSelect.className = "dual-subtitle-language-selector"
             populateLanguageSelector(languageSelect);
