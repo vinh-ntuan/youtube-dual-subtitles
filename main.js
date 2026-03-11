@@ -19,42 +19,50 @@
     // including PO Token, without which fetching subtitle returns empty string. Should look something like
     // pot=<PO_TOKEN>&fmt=json3&xorb=2&xobt=3&xovt=3&cbr=Firefox&cplatform=DESKTOP
     // See https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide for more info
-    async function extractTimedTextUrl() {
+    async function extractTimedTextUrl(maxRetries = 5) {
         const subtitleButtonSelector = ".ytp-subtitles-button";
         const subtitleButton = document.querySelector(subtitleButtonSelector);
         if (!subtitleButton) {
             throw new Error("Subtitle button not found");
         }
 
-        // const initialEntryCount = performance.getEntriesByType("resource").length;
-        // Toggle button twice to trigger timedtext request
-        subtitleButton.click();
-        subtitleButton.click();
-
-        await pause(1000);
-
         let timedTextUrl = null;
+        // Do this multiple times since the first time often fails (at least in Firefox)
+        let retries = maxRetries;
+        while (retries > 0) {
+            console.log("Trying to find timedtext URL. Try " + retries + "/" + maxRetries)
+            // Toggle button twice to trigger timedtext request
+            subtitleButton.click();
+            subtitleButton.click();
 
-        // Look for HTTP requests in performances entries
-        const entries = performance.getEntriesByType("resource");
-        for (const entry of entries) {
-            const isTimedText = entry.name.includes("timedtext");
-            const hasPot = entry.name.includes("&pot=");
+            await pause(500);
 
-            if (isTimedText && hasPot) {
-                console.log("Found matching timedtext request with &pot= parameter!");
-                timedTextUrl = new URL(entry.name);
-                timedTextUrl.searchParams.set("fmt", "vtt"); // track elems require vtt format
-                timedTextUrl.searchParams.delete("tlang"); // tlang links are for auto-translated subs
-                timedTextUrl.searchParams.delete("kind");
+
+            // Look for HTTP requests in performances entries
+            const entries = performance.getEntriesByType("resource");
+            for (const entry of entries) {
+                const isTimedText = entry.name.includes("timedtext");
+                const hasPot = entry.name.includes("&pot=");
+
+                if (isTimedText && hasPot) {
+                    console.log("Found matching timedtext request with &pot= parameter!");
+                    timedTextUrl = new URL(entry.name);
+                    timedTextUrl.searchParams.set("fmt", "vtt"); // track elems require vtt format
+                    timedTextUrl.searchParams.delete("tlang"); // tlang links are for auto-translated subs
+                    timedTextUrl.searchParams.delete("kind");
+                    break;
+                }
+            }
+
+            if (timedTextUrl) {
+                console.log("Timed text url: " + timedTextUrl);
                 break;
+            } else {
+                console.log("No timedtext URL / requests with &pot= parameter found");
+                retries--;
             }
         }
 
-        if (!timedTextUrl) {
-            throw new Error("No timedtext URL / requests with &pot= parameter found");
-        }
-        console.log("Timed text url: " + timedTextUrl);
         return timedTextUrl;
     }
 
