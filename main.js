@@ -139,11 +139,14 @@
             populateLanguageSelector(languageSelect);
             subtitleButton.before(languageSelect);
 
-
-            let baseTimedTextUrl = await extractTimedTextUrl();
+            // Checking available languages
+            const availableLanguages = [...languageSelect.options].map(o => o.value);
+            if (availableLanguages.length < 2){
+                console.log("Less than two languages detected. Exiting.")
+                return;
+            }
 
             // Load subtitle with default language
-            const availableLanguages = [...languageSelect.options].map(o => o.value);
             let initialSubLang;
             if (availableLanguages.includes(DEFAULT_LANG)){
                 initialSubLang = DEFAULT_LANG;
@@ -153,6 +156,8 @@
                 initialSubLang = languageSelect.value;
             }
             languageSelect.value = initialSubLang;
+
+            let baseTimedTextUrl = await extractTimedTextUrl();
             await loadSubtitle(track, baseTimedTextUrl, initialSubLang);
             console.log("Loaded initial sub with language " + initialSubLang);
 
