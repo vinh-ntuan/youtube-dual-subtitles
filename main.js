@@ -164,6 +164,8 @@
 
     async function main(){
         try {
+            // Sets up UI
+            // Secondary subtitle using the track element
             const video = document.querySelector("video");
             const track = document.createElement("track");
             track.className = "dual-subtitle-track"
@@ -203,11 +205,12 @@
             }
             languageSelect.value = initialSubLang;
 
+            // Base timetext URL is used to fetch subs by changing the lang query parameter
             let baseTimedTextUrl = await extractTimedTextUrl();
             await loadSubtitle(track, baseTimedTextUrl, initialSubLang);
             console.log("Loaded initial sub with language " + initialSubLang);
 
-            // Change language with select element
+            // Change subtitle when language select element is changed
             languageSelect.addEventListener("change", () => {
                 const languageCode = languageSelect.value;
                 loadSubtitle(track, baseTimedTextUrl, languageCode);
