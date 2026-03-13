@@ -232,6 +232,11 @@
                 attributes: true,
                 attributeFilter: ["aria-pressed"]
             });
+
+            // Show the track if subtitle button is enabled by default
+            if (subtitleButton.ariaPressed === "true"){
+                track.track.mode = "showing";
+            }
         } catch(e) {
             console.error(e);
         }
