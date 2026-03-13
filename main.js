@@ -131,6 +131,27 @@
         </select>
     </div>
     `;
+
+    // Places the given menuitem after the original YouTube Subtitles MenuItem
+    function placeMenuItem(menuitem){
+        const menu = document.querySelector(".ytp-panel-menu");
+
+        const items = menu.querySelectorAll(".ytp-menuitem");
+        let subtitlesItem = null;
+        // Looks for the menuitem containing text "Subtitles"
+        for (const item of items) {
+            const label = item.querySelector(".ytp-menuitem-label");
+            if (!label) continue;
+
+            if (label.textContent.includes("Subtitles")) {
+                subtitlesItem = item;
+                break;
+            }
+        }
+
+        subtitlesItem.after(menuitem);
+    }
+
     async function main(){
         try {
             const video = document.querySelector("video");
@@ -139,19 +160,19 @@
             video.appendChild(track);
 
             const youtubeMenu = document.querySelector(".ytp-panel-menu");
-            // Sets up our menu item
+            // Sets up our menu item for language selection
             // Removes old language menu item if Youtube retains it while switching videos
             youtubeMenu.querySelector(".dual-subtitles-menuitem")?.remove();
-            const menuItem = document.createElement("div");
-            menuItem.className = "ytp-menuitem dual-subtitles-menuitem";
-            menuItem.setAttribute("role", "menuitem");
-            menuItem.setAttribute("tabindex", "0");
-            menuItem.innerHTML = menuItemContent
+            const languageSelectMenuItem = document.createElement("div");
+            languageSelectMenuItem.className = "ytp-menuitem dual-subtitles-menuitem";
+            languageSelectMenuItem.setAttribute("role", "menuitem");
+            languageSelectMenuItem.setAttribute("tabindex", "0");
+            languageSelectMenuItem.innerHTML = menuItemContent
 
-            // add to menu, todo: move this right behind first subtitle
-            youtubeMenu.appendChild(menuItem);
+            // Place our menuitem after the YouTube subtitle language selection
+            placeMenuItem(languageSelectMenuItem)
 
-            const languageSelect = menuItem.querySelector("select");
+            const languageSelect = languageSelectMenuItem.querySelector("select");
             populateLanguageSelector(languageSelect);
 
             // Checking available languages
@@ -184,6 +205,7 @@
 
             // Toggle showing secondary subtitle with YouTube subtitle button
             // Watch for changes to ariaPressed, since pressing C or clicking can toggle the button
+            const subtitleButton = document.querySelector(".ytp-subtitles-button");
             const observer = new MutationObserver((mutations) => {
                 for (const m of mutations) {
                     if (m.attributeName === "aria-pressed") {
