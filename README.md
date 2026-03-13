@@ -1,6 +1,8 @@
 # Youtube Dual Subtitles
-- A simple UserScript to add a secondary subtitle to Youtube (Install with Tampermonkey on Firefox or Greasemonkey on Chrome)
-- Secondary subtitle language selection via dropdown menu
+![img.png](img/preview.png)
+
+- A simple UserScript to add a secondary subtitle to YouTube (Install with Tampermonkey on Firefox or Greasemonkey on Chrome)
+- Secondary subtitle language selection via dropdown inside YouTube menu
 - You can change the DEFAULT_LANG and FALLBACK_LANG variables to set default languages
 
 ## Todo:
