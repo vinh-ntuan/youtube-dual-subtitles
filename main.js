@@ -95,13 +95,12 @@
 
         for (const track of captionTracks) {
             const isAsr = track.kind === "asr";
-            const language = track.languageCode;
+            const languageCode = track.languageCode;
+            const languageName = track.name.simpleText;
 
             const opt = document.createElement("option");
-            opt.value = isAsr ? language + "-asr" : language;
-            opt.textContent = isAsr
-                ? language.toUpperCase() + " - Automatic Subtitle"
-                : language.toUpperCase();
+            opt.value = isAsr ? languageCode + "-asr" : languageCode;
+            opt.textContent = languageName
 
             selector.appendChild(opt);
         }
@@ -167,7 +166,7 @@
             languageSelectMenuItem.className = "ytp-menuitem dual-subtitles-menuitem";
             languageSelectMenuItem.setAttribute("role", "menuitem");
             languageSelectMenuItem.setAttribute("tabindex", "0");
-            languageSelectMenuItem.innerHTML = menuItemContent
+            languageSelectMenuItem.innerHTML = menuItemContent;
 
             // Place our menuitem after the YouTube subtitle language selection
             placeMenuItem(languageSelectMenuItem)
