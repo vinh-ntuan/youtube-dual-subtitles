@@ -185,6 +185,12 @@
             await placeMenuItem(languageSelectMenuItem)
 
             const languageSelect = languageSelectMenuItem.querySelector("select");
+            languageSelect.style.background = "transparent";
+            languageSelect.style.border = "none";
+            languageSelect.style.color = "inherit";
+            languageSelect.style.textAlign = "right";
+            // Not bothered enough for proper font size and aligning the select
+
             populateLanguageSelector(languageSelect);
 
             // Checking available languages
